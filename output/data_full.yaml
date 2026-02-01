@@ -1,0 +1,10 @@
+names:
+  0: Basophil
+  1: Eosinophil
+  2: Lymphocyte
+  3: Monocyte
+  4: Neutrophil
+nc: 5
+path: C:\D drive\mydata\MSML\DataSets\Raabin_datsets_withlabels
+train: Train/images
+val: val/images
