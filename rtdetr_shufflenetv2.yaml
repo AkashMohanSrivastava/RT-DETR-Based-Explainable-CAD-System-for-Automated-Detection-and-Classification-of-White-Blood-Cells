@@ -1,4 +1,4 @@
-# RT-DETR with ShuffleNetV2-Small inspired backbone
+# RT-DETR with ShuffleNetV2-Small inspired backbone (MODERATE - Optimized for Speed)
 # Lightweight transformer detector using channel shuffle concepts
 
 nc: 5  # number of classes
@@ -13,52 +13,52 @@ backbone:
   - [-1, 1, Conv, [24, 1, 1]]           # 1 - 1x1 conv
   - [-1, 1, DWConv, [24, 3, 2]]         # 2 - P2/4 depthwise stride 2
   - [-1, 1, Conv, [48, 1, 1]]           # 3 - 1x1 projection
-  - [-1, 3, C2f, [48]]                  # 4 - ShuffleNet-like block
+  - [-1, 2, C2f, [48]]                  # 4 - ShuffleNet-like block (was 3)
 
   # Stage 3 - P3/8
   - [-1, 1, Conv, [48, 1, 1]]           # 5 - expand
   - [-1, 1, DWConv, [48, 3, 2]]         # 6 - P3/8 depthwise stride 2
   - [-1, 1, Conv, [96, 1, 1]]           # 7 - project
-  - [-1, 4, C2f, [96]]                  # 8 - ShuffleNet-like blocks
+  - [-1, 2, C2f, [96]]                  # 8 - ShuffleNet-like blocks (was 4)
 
   # Stage 4 - P4/16
   - [-1, 1, Conv, [96, 1, 1]]           # 9 - expand
   - [-1, 1, DWConv, [96, 3, 2]]         # 10 - P4/16 depthwise stride 2
   - [-1, 1, Conv, [192, 1, 1]]          # 11 - project
-  - [-1, 6, C2f, [192]]                 # 12 - ShuffleNet-like blocks
+  - [-1, 3, C2f, [192]]                 # 12 - ShuffleNet-like blocks (was 6)
 
   # Stage 5 - P5/32
   - [-1, 1, Conv, [192, 1, 1]]          # 13 - expand
   - [-1, 1, DWConv, [192, 3, 2]]        # 14 - P5/32 depthwise stride 2
   - [-1, 1, Conv, [384, 1, 1]]          # 15 - project
-  - [-1, 3, C2f, [384]]                 # 16 - ShuffleNet-like blocks
+  - [-1, 2, C2f, [384]]                 # 16 - ShuffleNet-like blocks (was 3)
 
 head:
   # RT-DETR Hybrid Encoder - project P5 features
   - [-1, 1, Conv, [256, 1, 1]]                             # 17 - input proj
-  - [-1, 1, AIFI, [1024, 8]]                               # 18 - AIFI transformer
+  - [-1, 1, AIFI, [512, 4]]                                # 18 - AIFI transformer (was 1024, 8)
   - [-1, 1, Conv, [256, 1, 1]]                             # 19 - output proj
 
   # Top-down path - upsample and fuse with P4
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]]             # 20 - upsample
   - [12, 1, Conv, [256, 1, 1]]                             # 21 - project P4 (layer 12)
   - [[-2, -1], 1, Concat, [1]]                             # 22 - concat
-  - [-1, 3, RepC3, [256]]                                  # 23 - fuse
+  - [-1, 2, RepC3, [256]]                                  # 23 - fuse (was 3)
 
   # Top-down path - upsample and fuse with P3
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]]             # 24 - upsample
   - [8, 1, Conv, [256, 1, 1]]                              # 25 - project P3 (layer 8)
   - [[-2, -1], 1, Concat, [1]]                             # 26 - concat
-  - [-1, 3, RepC3, [256]]                                  # 27 - fpn_out0 (P3)
+  - [-1, 2, RepC3, [256]]                                  # 27 - fpn_out0 (P3) (was 3)
 
   # Bottom-up path
   - [-1, 1, Conv, [256, 3, 2]]                             # 28 - downsample
   - [[-1, 23], 1, Concat, [1]]                             # 29 - concat with P4 features
-  - [-1, 3, RepC3, [256]]                                  # 30 - fpn_out1 (P4)
+  - [-1, 2, RepC3, [256]]                                  # 30 - fpn_out1 (P4) (was 3)
 
   - [-1, 1, Conv, [256, 3, 2]]                             # 31 - downsample
   - [[-1, 19], 1, Concat, [1]]                             # 32 - concat with P5 features
-  - [-1, 3, RepC3, [256]]                                  # 33 - fpn_out2 (P5)
+  - [-1, 2, RepC3, [256]]                                  # 33 - fpn_out2 (P5) (was 3)
 
   # RT-DETR Decoder
   - [[27, 30, 33], 1, RTDETRDecoder, [nc, 256, 300, 4, 8, 3]]  # 34 - Decoder

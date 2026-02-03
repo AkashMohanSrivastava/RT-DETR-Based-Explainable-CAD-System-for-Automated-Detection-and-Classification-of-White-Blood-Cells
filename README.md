@@ -92,25 +92,375 @@ RT-DETR-Based-Explainable-CAD-System/
 
 ## Model Architectures
 
-### 1. RT-DETR-L (Large)
+This project implements RT-DETR (Real-Time Detection Transformer) with four different backbone architectures. RT-DETR combines CNN backbones with transformer encoders for efficient object detection.
+
+### RT-DETR Framework Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           RT-DETR Architecture                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
+│  │  Input   │───>│   Backbone   │───>│   Hybrid     │───>│   RT-DETR    │  │
+│  │  Image   │    │   (CNN)      │    │   Encoder    │    │   Decoder    │  │
+│  └──────────┘    └──────────────┘    └──────────────┘    └──────────────┘  │
+│                         │                   │                    │          │
+│                         v                   v                    v          │
+│                  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐  │
+│                  │ Multi-scale │    │    AIFI     │    │   Detection    │  │
+│                  │  Features   │    │ Transformer │    │     Heads      │  │
+│                  │  P3,P4,P5   │    │   + FPN     │    │  (cls + bbox)  │  │
+│                  └─────────────┘    └─────────────┘    └─────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 1. RT-DETR-L (Large) - ResNet-50 Backbone
+
 - **Backbone**: ResNet-50
-- **Training Mode**: Pretrained (fine-tuning)
+- **Training Mode**: Pretrained (fine-tuning from COCO weights)
 - **Model File**: `rtdetr-l.pt`
+- **Parameters**: ~32M
 
-### 2. RT-DETR-X (Extra Large)
+#### ResNet-50 Architecture
+
+ResNet (Residual Network) introduced skip connections to enable training of very deep networks by addressing the vanishing gradient problem.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         ResNet-50 Architecture                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Input (640x640x3)                                                          │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────┐                                                        │
+│  │   Conv 7x7/2    │──> 320x320x64                                          │
+│  │   MaxPool 3x3/2 │──> 160x160x64                                          │
+│  └─────────────────┘                                                        │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────┐     ┌───────────────────────────────┐                  │
+│  │   Stage 1       │     │  Bottleneck Block (x3)        │                  │
+│  │   (conv2_x)     │────>│  ┌─────┐  ┌─────┐  ┌─────┐   │                  │
+│  │   160x160x256   │     │  │1x1  │─>│3x3  │─>│1x1  │─┐ │                  │
+│  └─────────────────┘     │  │ 64  │  │ 64  │  │256  │ │ │                  │
+│         │                │  └─────┘  └─────┘  └─────┘ │ │  Skip            │
+│         v                │         +──────────────────┘ │  Connection      │
+│  ┌─────────────────┐     └───────────────────────────────┘                  │
+│  │   Stage 2       │                                                        │
+│  │   (conv3_x)     │──> 80x80x512   (x4 blocks) ──> P3                      │
+│  └─────────────────┘                                                        │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────┐                                                        │
+│  │   Stage 3       │                                                        │
+│  │   (conv4_x)     │──> 40x40x1024  (x6 blocks) ──> P4                      │
+│  └─────────────────┘                                                        │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────┐                                                        │
+│  │   Stage 4       │                                                        │
+│  │   (conv5_x)     │──> 20x20x2048  (x3 blocks) ──> P5                      │
+│  └─────────────────┘                                                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Key Features of ResNet-50:
+- **Residual Learning**: Skip connections allow gradients to flow directly through the network
+- **Bottleneck Design**: 1x1 → 3x3 → 1x1 convolutions reduce computational cost
+- **Batch Normalization**: Applied after each convolution for stable training
+- **50 Layers**: 1 conv + 3+4+6+3 bottleneck blocks (each with 3 conv layers)
+
+---
+
+### 2. RT-DETR-X (Extra Large) - ResNet-101 Backbone
+
 - **Backbone**: ResNet-101
-- **Training Mode**: Pretrained (fine-tuning)
+- **Training Mode**: Pretrained (fine-tuning from COCO weights)
 - **Model File**: `rtdetr-x.pt`
+- **Parameters**: ~67M
 
-### 3. RT-DETR-MobileNet
-- **Backbone**: MobileNetV3-Small (lightweight)
+#### ResNet-101 Architecture
+
+ResNet-101 extends ResNet-50 with deeper feature extraction, particularly in Stage 3.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ResNet-101 vs ResNet-50 Comparison                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Layer          │  ResNet-50   │  ResNet-101  │  Output Size                │
+│  ───────────────┼──────────────┼──────────────┼─────────────                │
+│  conv1          │  7x7, 64     │  7x7, 64     │  320x320                    │
+│  ───────────────┼──────────────┼──────────────┼─────────────                │
+│  conv2_x        │  3 blocks    │  3 blocks    │  160x160x256                │
+│  ───────────────┼──────────────┼──────────────┼─────────────                │
+│  conv3_x (P3)   │  4 blocks    │  4 blocks    │  80x80x512                  │
+│  ───────────────┼──────────────┼──────────────┼─────────────                │
+│  conv4_x (P4)   │  6 blocks    │  23 blocks   │  40x40x1024   <── Deeper!   │
+│  ───────────────┼──────────────┼──────────────┼─────────────                │
+│  conv5_x (P5)   │  3 blocks    │  3 blocks    │  20x20x2048                 │
+│  ───────────────┴──────────────┴──────────────┴─────────────                │
+│                                                                             │
+│  Total Layers:    50 layers      101 layers                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Key Differences from ResNet-50:
+- **Deeper Stage 3**: 23 bottleneck blocks vs 6 (more feature extraction capacity)
+- **Better Feature Representation**: Captures more complex patterns
+- **Higher Computational Cost**: ~2x more parameters than ResNet-50
+- **Recommended for**: High-accuracy requirements where speed is secondary
+
+---
+
+### 3. RT-DETR-MobileNet - MobileNetV3-Small Backbone
+
+- **Backbone**: MobileNetV3-Small (custom implementation)
 - **Training Mode**: From scratch
 - **Config File**: `rtdetr_mobilenetv3.yaml`
+- **Parameters**: ~3M (backbone only)
 
-### 4. RT-DETR-ShuffleNet
-- **Backbone**: ShuffleNetV2-Small (lightweight)
+#### MobileNetV3-Small Architecture
+
+MobileNetV3 is designed for mobile and edge devices, using depthwise separable convolutions and squeeze-and-excitation blocks for efficiency.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      MobileNetV3-Small Architecture                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Input (512x512x3)                                                          │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Stem: Conv 3x3/2 ──> 256x256x16                                    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Stage 1-2: DWConv blocks ──> 128x128x24                            │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Stage 3 (P3): Expand(72) → DWConv 5x5/2 → Project(40) → C2f        │    │
+│  │  Output: 64x64x40                                                   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Stage 4 (P4): Expand(120) → DWConv 5x5/2 → Project(80) → C2f(x2)   │    │
+│  │  Output: 32x32x80                                                   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Stage 5 (P5): Expand(240) → DWConv 5x5/2 → Project(160) → C2f      │    │
+│  │  Output: 16x16x160                                                  │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Depthwise Separable Convolution                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Standard Conv (3x3, C_in → C_out):                                         │
+│  Params = 3 × 3 × C_in × C_out                                              │
+│                                                                             │
+│  Depthwise Separable Conv:                                                  │
+│  ┌──────────────┐    ┌──────────────┐                                       │
+│  │  Depthwise   │───>│  Pointwise   │                                       │
+│  │  3x3 × C_in  │    │  1x1 × C_out │                                       │
+│  └──────────────┘    └──────────────┘                                       │
+│  Params = 3 × 3 × C_in + C_in × C_out                                       │
+│                                                                             │
+│  Reduction: ~8-9x fewer parameters!                                         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Key Features of MobileNetV3:
+- **Depthwise Separable Convolutions**: 8-9x parameter reduction vs standard conv
+- **Inverted Residuals**: Expand → Depthwise → Project (thin-thick-thin)
+- **5x5 Depthwise Kernels**: Larger receptive field with minimal cost increase
+- **Hard-Swish Activation**: Efficient approximation of Swish activation
+- **Optimized for Mobile**: Designed for <100ms inference on mobile CPUs
+
+#### Our Custom Configuration (`rtdetr_mobilenetv3.yaml`):
+
+| Stage | Expansion | Kernel | Output Channels | C2f Blocks |
+|-------|-----------|--------|-----------------|------------|
+| P3/8  | 72        | 5x5    | 40              | 1          |
+| P4/16 | 120       | 5x5    | 80              | 2          |
+| P5/32 | 240       | 5x5    | 160             | 1          |
+
+---
+
+### 4. RT-DETR-ShuffleNet - ShuffleNetV2-Small Backbone
+
+- **Backbone**: ShuffleNetV2-Small (custom implementation)
 - **Training Mode**: From scratch
 - **Config File**: `rtdetr_shufflenetv2.yaml`
+- **Parameters**: ~2.5M (backbone only)
+
+#### ShuffleNetV2-Small Architecture
+
+ShuffleNetV2 achieves efficiency through channel shuffle operations and balanced channel splits, optimized for actual hardware inference speed.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      ShuffleNetV2-Small Architecture                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Input (512x512x3)                                                          │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Stem: Conv 3x3/2 ──> 256x256x24                                    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Stage 2 (P2): DWConv/2 → 1x1 → C2f(x2) ──> 128x128x48              │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Stage 3 (P3): DWConv/2 → 1x1 → C2f(x2) ──> 64x64x96                │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Stage 4 (P4): DWConv/2 → 1x1 → C2f(x3) ──> 32x32x192               │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│         │                                                                   │
+│         v                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Stage 5 (P5): DWConv/2 → 1x1 → C2f(x2) ──> 16x16x384               │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Channel Shuffle Operation                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Input Channels: [A1 A2 A3 B1 B2 B3]  (2 groups × 3 channels)               │
+│                                                                             │
+│  Step 1 - Reshape:    ┌─────────────┐                                       │
+│                       │ A1  A2  A3  │                                       │
+│                       │ B1  B2  B3  │                                       │
+│                       └─────────────┘                                       │
+│                                                                             │
+│  Step 2 - Transpose:  ┌─────────────┐                                       │
+│                       │ A1  B1      │                                       │
+│                       │ A2  B2      │                                       │
+│                       │ A3  B3      │                                       │
+│                       └─────────────┘                                       │
+│                                                                             │
+│  Step 3 - Flatten:    [A1 B1 A2 B2 A3 B3]  (shuffled!)                      │
+│                                                                             │
+│  Purpose: Enable cross-group information flow without extra computation     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Key Features of ShuffleNetV2:
+- **Channel Shuffle**: Zero-cost operation for cross-channel information mixing
+- **Channel Split**: Half channels for identity, half for transformation
+- **Balanced Channels**: Equal channel widths at each layer for memory efficiency
+- **No Group Convolutions**: Removed to improve memory access patterns
+- **Practical Speed**: Designed based on actual inference benchmarks, not just FLOPs
+
+#### Our Custom Configuration (`rtdetr_shufflenetv2.yaml`):
+
+| Stage | Input Ch | Output Ch | C2f Blocks | Stride |
+|-------|----------|-----------|------------|--------|
+| P2/4  | 24       | 48        | 2          | 2      |
+| P3/8  | 48       | 96        | 2          | 2      |
+| P4/16 | 96       | 192       | 3          | 2      |
+| P5/32 | 192      | 384       | 2          | 2      |
+
+---
+
+### RT-DETR Head Architecture (Common to All Backbones)
+
+All backbone outputs feed into the same RT-DETR head architecture:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          RT-DETR Hybrid Encoder                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Backbone Features                                                          │
+│  ┌─────┐ ┌─────┐ ┌─────┐                                                    │
+│  │ P3  │ │ P4  │ │ P5  │                                                    │
+│  └──┬──┘ └──┬──┘ └──┬──┘                                                    │
+│     │       │       │                                                       │
+│     │       │       v                                                       │
+│     │       │  ┌─────────────────┐                                          │
+│     │       │  │  AIFI (Intra-   │  Attention-based Intra-scale             │
+│     │       │  │  scale Fusion)  │  Feature Interaction                     │
+│     │       │  │  512 dims,      │  (Transformer encoder on P5)             │
+│     │       │  │  4 heads        │                                          │
+│     │       │  └────────┬────────┘                                          │
+│     │       │           │                                                   │
+│     │       │           v                                                   │
+│     │       │  ┌─────────────────┐                                          │
+│     │       └─>│    Top-Down     │  Feature Pyramid Network                 │
+│     │          │    Path (FPN)   │  Upsample + Concat + RepC3               │
+│     └─────────>│                 │                                          │
+│                └────────┬────────┘                                          │
+│                         │                                                   │
+│                         v                                                   │
+│                ┌─────────────────┐                                          │
+│                │   Bottom-Up     │  Path Aggregation Network                │
+│                │   Path (PAN)    │  Downsample + Concat + RepC3             │
+│                └────────┬────────┘                                          │
+│                         │                                                   │
+│                         v                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                     RTDETRDecoder                                   │    │
+│  │  - 300 object queries                                               │    │
+│  │  - 4 decoder layers                                                 │    │
+│  │  - 8 attention heads                                                │    │
+│  │  - 3 feature levels (P3, P4, P5)                                    │    │
+│  │  - Classification head (nc classes)                                 │    │
+│  │  - Bounding box regression head                                     │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Architecture Comparison Summary
+
+| Feature | ResNet-50 | ResNet-101 | MobileNetV3 | ShuffleNetV2 |
+|---------|-----------|------------|-------------|--------------|
+| **Type** | Deep Residual | Deep Residual | Inverted Residual | Channel Shuffle |
+| **Params (backbone)** | ~23M | ~42M | ~3M | ~2.5M |
+| **Key Innovation** | Skip connections | Deeper Stage 3 | Depthwise Sep Conv | Channel Shuffle |
+| **Pretrained** | Yes (COCO) | Yes (COCO) | No | No |
+| **Target Use** | High accuracy | Maximum accuracy | Mobile/Edge | Mobile/Edge |
+| **Inference Speed** | Medium | Slow | Fast | Fast |
+
+### External Architecture References
+
+For detailed visual diagrams, refer to the original papers:
+
+- **ResNet**: [Deep Residual Learning (He et al., 2015)](https://arxiv.org/abs/1512.03385)
+- **MobileNetV3**: [Searching for MobileNetV3 (Howard et al., 2019)](https://arxiv.org/abs/1905.02244)
+- **ShuffleNetV2**: [ShuffleNet V2: Practical Guidelines (Ma et al., 2018)](https://arxiv.org/abs/1807.11164)
+- **RT-DETR**: [DETRs Beat YOLOs on Real-time Object Detection (Lv et al., 2023)](https://arxiv.org/abs/2304.08069)
 
 ## Requirements
 

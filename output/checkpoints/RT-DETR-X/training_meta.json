@@ -1,0 +1,16 @@
+{
+  "total_epochs": 1,
+  "last_run_epochs": 1,
+  "last_run_dir": "C:\\D drive\\mydata\\MSML\\GitHub\\RT-DETR-Based-Explainable-CAD-System-for-Automated-Detection-and-Classification-of-White-Blood-Cells\\output\\training_runs\\RT-DETR-X",
+  "last_run_time": "2026-02-03T09:00:08.907634",
+  "training_sessions": 1,
+  "history": [
+    {
+      "session": 1,
+      "epochs_this_session": 1,
+      "total_epochs_after": 1,
+      "run_dir": "C:\\D drive\\mydata\\MSML\\GitHub\\RT-DETR-Based-Explainable-CAD-System-for-Automated-Detection-and-Classification-of-White-Blood-Cells\\output\\training_runs\\RT-DETR-X",
+      "timestamp": "2026-02-03T09:00:08.907634"
+    }
+  ]
+}
