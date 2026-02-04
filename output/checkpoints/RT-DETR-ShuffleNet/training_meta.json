@@ -1,9 +1,9 @@
 {
-  "total_epochs": 1,
-  "last_run_epochs": 1,
+  "total_epochs": 5,
+  "last_run_epochs": 4,
   "last_run_dir": "C:\\D drive\\mydata\\MSML\\GitHub\\RT-DETR-Based-Explainable-CAD-System-for-Automated-Detection-and-Classification-of-White-Blood-Cells\\output\\training_runs\\RT-DETR-ShuffleNet",
-  "last_run_time": "2026-02-03T08:14:53.335673",
-  "training_sessions": 1,
+  "last_run_time": "2026-02-03T09:27:45.012022",
+  "training_sessions": 2,
   "history": [
     {
       "session": 1,
@@ -11,6 +11,13 @@
       "total_epochs_after": 1,
       "run_dir": "C:\\D drive\\mydata\\MSML\\GitHub\\RT-DETR-Based-Explainable-CAD-System-for-Automated-Detection-and-Classification-of-White-Blood-Cells\\output\\training_runs\\RT-DETR-ShuffleNet",
       "timestamp": "2026-02-03T08:14:53.335673"
+    },
+    {
+      "session": 2,
+      "epochs_this_session": 4,
+      "total_epochs_after": 5,
+      "run_dir": "C:\\D drive\\mydata\\MSML\\GitHub\\RT-DETR-Based-Explainable-CAD-System-for-Automated-Detection-and-Classification-of-White-Blood-Cells\\output\\training_runs\\RT-DETR-ShuffleNet",
+      "timestamp": "2026-02-03T09:27:45.012022"
     }
   ]
 }

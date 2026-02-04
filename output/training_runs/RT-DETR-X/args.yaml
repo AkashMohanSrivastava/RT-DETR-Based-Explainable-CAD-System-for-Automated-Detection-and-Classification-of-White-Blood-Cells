@@ -1,11 +1,11 @@
 task: detect
 mode: train
-model: rtdetr-x.pt
+model: C:\D drive\mydata\MSML\GitHub\RT-DETR-Based-Explainable-CAD-System-for-Automated-Detection-and-Classification-of-White-Blood-Cells\output\checkpoints\RT-DETR-X\last.pt
 data: C:\D drive\mydata\MSML\GitHub\RT-DETR-Based-Explainable-CAD-System-for-Automated-Detection-and-Classification-of-White-Blood-Cells\output\data_full.yaml
-epochs: 1
+epochs: 2
 time: null
 patience: 15
-batch: 6
+batch: 3
 imgsz: 512
 save: true
 save_period: -1
@@ -75,7 +75,7 @@ lr0: 0.01
 lrf: 0.0001
 momentum: 0.937
 weight_decay: 0.0005
-warmup_epochs: 1
+warmup_epochs: 0
 warmup_momentum: 0.8
 warmup_bias_lr: 0.1
 box: 7.5
