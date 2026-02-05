@@ -574,14 +574,14 @@ output/
 
 ### Model Comparison
 
-All models were trained on the Raabin-WBC dataset (5 epochs) and evaluated on 500 test samples (100 per class).
+All models were trained on the Raabin-WBC dataset and evaluated on 500 test samples (100 per class).
 
-| Model | Backbone | Pretrained | Accuracy | Inference (ms) | Training (s) |
-|-------|----------|------------|----------|----------------|--------------|
-| **RT-DETR-L** | ResNet-50 | Yes | **96.80%** | 40.57 | 1300.4 |
-| RT-DETR-X | ResNet-101 | Yes | 91.40% | 48.73 | 3152.4 |
-| RT-DETR-ShuffleNet | ShuffleNetV2-Small | No | 79.40% | 27.29 | 1269.4 |
-| RT-DETR-MobileNet | MobileNetV3-Small | No | 75.60% | **25.66** | **1286.5** |
+| Model | Backbone | Pretrained | Epochs | Accuracy | Inference (ms) | Training (s) |
+|-------|----------|------------|--------|----------|----------------|--------------|
+| **RT-DETR-L** | ResNet-50 | Yes | 5 | **96.80%** | 40.57 | 1300.4 |
+| RT-DETR-MobileNet | MobileNetV3-Small | No | 15 | 94.40% | **26.46** | 1535.6 |
+| RT-DETR-ShuffleNet | ShuffleNetV2-Small | No | 15 | 93.20% | 26.54 | 1517.7 |
+| RT-DETR-X | ResNet-101 | Yes | 5 | 91.40% | 48.73 | 3152.4 |
 
 ### Best Model: RT-DETR-L (ResNet-50)
 
@@ -601,29 +601,30 @@ The RT-DETR-L model with ResNet-50 backbone achieved the highest accuracy of **9
 ### Model Rankings
 
 #### By Accuracy (Descending)
-1. **RT-DETR-L**: 96.80%
-2. RT-DETR-X: 91.40%
-3. RT-DETR-ShuffleNet: 79.40%
-4. RT-DETR-MobileNet: 75.60%
+1. **RT-DETR-L**: 96.80% (5 epochs)
+2. RT-DETR-MobileNet: 94.40% (15 epochs)
+3. RT-DETR-ShuffleNet: 93.20% (15 epochs)
+4. RT-DETR-X: 91.40% (5 epochs)
 
 #### By Inference Speed (Ascending)
-1. **RT-DETR-MobileNet**: 25.66ms
-2. RT-DETR-ShuffleNet: 27.29ms
+1. **RT-DETR-MobileNet**: 26.46ms
+2. RT-DETR-ShuffleNet: 26.54ms
 3. RT-DETR-L: 40.57ms
 4. RT-DETR-X: 48.73ms
 
 #### By Training Time (Ascending)
-1. **RT-DETR-ShuffleNet**: 1269.4s (~21 min)
-2. RT-DETR-MobileNet: 1286.5s (~21 min)
-3. RT-DETR-L: 1300.4s (~22 min)
-4. RT-DETR-X: 3152.4s (~53 min)
+1. **RT-DETR-L**: 1300.4s (~22 min, 5 epochs)
+2. RT-DETR-ShuffleNet: 1517.7s (~25 min, 15 epochs)
+3. RT-DETR-MobileNet: 1535.6s (~26 min, 15 epochs)
+4. RT-DETR-X: 3152.4s (~53 min, 5 epochs)
 
 ### Key Findings
 
-- **Best Overall**: RT-DETR-L with ResNet-50 backbone achieves the highest accuracy (96.80%) with excellent per-class performance
-- **Best for Real-Time**: RT-DETR-MobileNet offers the fastest inference (25.66ms) but with reduced accuracy (75.60%)
-- **Best Balance**: RT-DETR-X provides strong accuracy (91.40%) with the deeper ResNet-101 backbone
-- **Pretrained vs From-Scratch**: Pretrained models (RT-DETR-L, RT-DETR-X) significantly outperform models trained from scratch on this dataset
+- **Best Overall**: RT-DETR-L with ResNet-50 backbone achieves the highest accuracy (96.80%) with only 5 epochs of training
+- **Best for Real-Time**: RT-DETR-MobileNet offers the fastest inference (26.46ms) with strong accuracy (94.40%) after 15 epochs
+- **Efficient Lightweight Models**: Both MobileNet and ShuffleNet backbones achieve >93% accuracy when trained for more epochs, making them suitable for edge deployment
+- **Pretrained Advantage**: Pretrained models (RT-DETR-L) converge faster, achieving top accuracy in only 5 epochs
+- **Training Trade-off**: Lightweight models trained from scratch require more epochs (15) but achieve competitive accuracy with faster inference
 
 ### Visualization Outputs
 

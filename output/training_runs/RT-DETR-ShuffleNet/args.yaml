@@ -2,7 +2,7 @@ task: detect
 mode: train
 model: C:\D drive\mydata\MSML\GitHub\RT-DETR-Based-Explainable-CAD-System-for-Automated-Detection-and-Classification-of-White-Blood-Cells\output\checkpoints\RT-DETR-ShuffleNet\last.pt
 data: C:\D drive\mydata\MSML\GitHub\RT-DETR-Based-Explainable-CAD-System-for-Automated-Detection-and-Classification-of-White-Blood-Cells\output\data_full.yaml
-epochs: 4
+epochs: 5
 time: null
 patience: 20
 batch: 12
