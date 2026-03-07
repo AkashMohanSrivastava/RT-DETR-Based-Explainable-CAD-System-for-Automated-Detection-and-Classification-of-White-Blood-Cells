@@ -187,6 +187,52 @@ def create_sampled_dataset(data_root, base_dir, classes, train_samples_per_class
     return data_yaml_path
 
 
+def _accumulate_loss_csv(run_dir, checkpoint_dir, previous_epochs):
+    """
+    Append this session's results.csv to a persistent full_results.csv.
+
+    Ultralytics overwrites results.csv on every training session, so epoch
+    history is lost on resume.  This function reads the just-completed
+    session's CSV, shifts its epoch column by *previous_epochs* to make the
+    numbers cumulative, and appends the rows to
+    ``{checkpoint_dir}/full_results.csv``, creating it if necessary.
+
+    Args:
+        run_dir: Directory containing Ultralytics results.csv for this session
+        checkpoint_dir: Checkpoint directory where full_results.csv is stored
+        previous_epochs: Number of epochs completed before this session
+    """
+    try:
+        import pandas as pd
+    except ImportError:
+        print("  WARNING: pandas not installed; skipping loss CSV accumulation.")
+        return
+
+    session_csv = os.path.join(run_dir, "results.csv")
+    persist_csv = os.path.join(checkpoint_dir, "full_results.csv")
+
+    if not os.path.exists(session_csv):
+        print(f"  WARNING: results.csv not found at {session_csv}; skipping accumulation.")
+        return
+
+    df_new = pd.read_csv(session_csv)
+    df_new.columns = df_new.columns.str.strip()
+    df_new["epoch"] = df_new["epoch"] + previous_epochs   # make cumulative
+
+    if os.path.exists(persist_csv):
+        df_existing = pd.read_csv(persist_csv)
+        # Drop any existing rows that overlap with this session (safety guard)
+        if "epoch" in df_existing.columns:
+            df_existing = df_existing[df_existing["epoch"] <= previous_epochs]
+        df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+    else:
+        df_combined = df_new
+
+    df_combined.to_csv(persist_csv, index=False)
+    print(f"  Loss CSV updated: {len(df_new)} row(s) appended "
+          f"→ {persist_csv}  ({len(df_combined)} total epochs logged)")
+
+
 def train_model(model_source, model_name, data_yaml, training_config, base_dir,
                 use_full_dataset=True, checkpoint_dir=None, default_warmup_epochs=3):
     """
@@ -346,6 +392,9 @@ def train_model(model_source, model_name, data_yaml, training_config, base_dir,
         with open(checkpoint_meta_path, 'w') as f:
             json.dump(meta, f, indent=2)
         print(f"Metadata saved: {checkpoint_meta_path}")
+
+        # Accumulate this session's loss rows into a persistent full_results.csv
+        _accumulate_loss_csv(run_dir, checkpoint_dir, previous_epochs)
 
         print(f"\n*** TOTAL EPOCHS COMPLETED: {total_epochs} ***")
 
