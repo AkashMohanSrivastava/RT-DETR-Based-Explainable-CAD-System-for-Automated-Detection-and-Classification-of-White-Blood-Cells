@@ -16,6 +16,7 @@ import time
 from datetime import datetime
 
 import numpy as np
+import torch
 import yaml
 from tqdm import tqdm
 
@@ -187,6 +188,26 @@ def create_sampled_dataset(data_root, base_dir, classes, train_samples_per_class
     return data_yaml_path
 
 
+def _make_nan_guard_callback():
+    """
+    Returns an Ultralytics callback that fires after each backward pass.
+    If NaN/Inf gradients are detected, they are zeroed and the LR is halved
+    to prevent the optimizer step from corrupting model weights.
+    """
+    def on_before_zero_grad(trainer):
+        nan_found = False
+        for p in trainer.model.parameters():
+            if p.grad is not None and (torch.isnan(p.grad).any() or torch.isinf(p.grad).any()):
+                nan_found = True
+                p.grad.zero_()
+        if nan_found:
+            for g in trainer.optimizer.param_groups:
+                g['lr'] *= 0.5
+            current_lr = trainer.optimizer.param_groups[0]['lr']
+            print(f"\n[NaN Guard] Bad gradients detected — LR halved to {current_lr:.2e}")
+    return on_before_zero_grad
+
+
 def _accumulate_loss_csv(run_dir, checkpoint_dir, previous_epochs):
     """
     Append this session's results.csv to a persistent full_results.csv.
@@ -312,6 +333,9 @@ def train_model(model_source, model_name, data_yaml, training_config, base_dir,
         model = RTDETR(checkpoint_model_path)
     else:
         model = RTDETR(model_source)
+
+    # Register NaN guard (passive safety net — only fires if NaN/Inf gradients appear)
+    model.add_callback("on_before_zero_grad", _make_nan_guard_callback())
 
     # Record start time
     start_time = time.time()
