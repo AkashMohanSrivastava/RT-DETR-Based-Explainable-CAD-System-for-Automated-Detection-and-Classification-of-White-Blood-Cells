@@ -464,7 +464,7 @@ def evaluate_model(model_path, images_dir, classes, id2label,
         cls_dir = os.path.join(images_dir, gt_class)
         files = [f for f in os.listdir(cls_dir) if f.lower().endswith(".jpg")]
 
-        if len(files) > eval_per_class:
+        if eval_per_class is not None and len(files) > eval_per_class:
             files = random.sample(files, eval_per_class)
 
         for fname in tqdm(files, desc=f"Evaluating {gt_class}", leave=False):
