@@ -343,16 +343,25 @@ def plot_bar(ax, names, values, ylabel, title, fmt=".3f", ylim=None, baseline=No
     ax.set_title(title, fontsize=14, fontweight="bold")
     ax.tick_params(axis="x", rotation=45, labelsize=12)
     ax.tick_params(axis="y", labelsize=11)
-    if ylim:
-        ax.set_ylim(*ylim)
+    ymax = max(safe) if max(safe) > 0 else 1
+    ybot = ylim[0] if ylim else 0
+    ytop = ylim[1] if ylim else ymax
+    yrange = ytop - ybot
+    ax.set_ylim(ybot, ytop if ylim else ytop * 1.08)
     if baseline is not None:
         ax.axhline(baseline, color="red", linestyle="--", linewidth=1,
                    label=f"Random baseline ({baseline})")
         ax.legend(fontsize=11)
-    ymax = max(safe) if max(safe) > 0 else 1
     for i, v in enumerate(safe):
         label = f"{v:{fmt}}" if values[i] is not None else "N/A"
-        ax.text(i, v + ymax * 0.02, label, ha="center", fontsize=11, fontweight="bold")
+        if values[i] is None or v < yrange * 0.08:
+            # tiny or missing bar — place label above
+            ax.text(i, v + yrange * 0.02, label, ha="center", va="bottom",
+                    fontsize=10, fontweight="bold")
+        else:
+            # normal bar — place label inside near top to avoid title/neighbour overlap
+            ax.text(i, v - yrange * 0.03, label, ha="center", va="top",
+                    fontsize=10, fontweight="bold")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
